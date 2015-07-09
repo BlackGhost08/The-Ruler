@@ -20,7 +20,7 @@ public enum MouseAction
 
 public class GameManager : MonoBehaviour
 {
-	public GameObject Map, tileObj, tilesBag, testobj, testObj2;
+	public GameObject Map, tileObj, tilesBag, testobj;
 
 	public Camera subCam;
 	
@@ -31,7 +31,8 @@ public class GameManager : MonoBehaviour
 	//                                      _______________________
 	/*-----------------------------------   Globally used variables -----------------------------------*/
 	//                                      ***********************
-	public static float mapWidth = Screen.width, mapHeight = Screen.width, unitWidth, unitHeight;
+	public static float terrainWidth = Screen.width, terrainHeight = Screen.width, unitWidth, unitHeight;
+	public static float mapWidth = (87.5f/100)*terrainWidth, mapHeight = (87.5f/100)*terrainHeight;
 	public static GameObject[,] tile;
 	public static GameManager instance; //----> To access GameManager
 
@@ -62,13 +63,13 @@ public class GameManager : MonoBehaviour
 		mouse_action = MouseAction.None;
 
 		GameObject m = Instantiate(Map, new Vector3(0, -0.5f*Screen.width, 0.5f*Screen.width), Quaternion.Euler(90,0,0))as GameObject;
-		m.transform.localScale = new Vector3(mapWidth, mapHeight, 1);//----> x-(x/4)
+		m.transform.localScale = new Vector3(terrainWidth, terrainHeight, 1);//----> x-(x/4)
 
 
 		//Size of the map is 100%. 87.5% space can be used to place buildings
 		/*  Width and Height of single tile building  */
-		unitWidth = ((87.5f/100)*mapWidth) / (mapSize * 2);  //->GLOBAL
-		unitHeight = ((87.5f/100)*mapHeight) / (mapSize * 2);//  VARIABLES
+		unitWidth = mapWidth / (mapSize * 2);  //->GLOBAL
+		unitHeight = mapHeight / (mapSize * 2);//  VARIABLES
 		//==================================================================\\
 
 
@@ -99,29 +100,23 @@ public class GameManager : MonoBehaviour
 		}
 		//=============================================================================================\\
 
-		testObj2 = Instantiate(testObj2, Vector3.zero, Quaternion.Euler(90,0,0))as GameObject;
-		testObj2.transform.localScale = new Vector3(unitWidth, unitHeight, 1);
+//		testObj2 = Instantiate(testObj2, Vector3.zero, Quaternion.Euler(90,0,0))as GameObject;
+//		testObj2.transform.localScale = new Vector3(unitWidth, unitHeight, 1);
 	}
 
 
 	void Update()
 	{
-		if (Input.GetMouseButton(0))
-		{
-
-			ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-
-			if (Physics.Raycast (ray, out hit, 2000))
-			{
-				testObj2.transform.position = hit.point;
-			}
-			//Vector3 point1 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			//Vector3 point1 = SubCam.instance.GetMousePosition();
-
-			//testObj2.transform.position = point1;
-//			int[] tile_no = GameManager.instance.GetNearestPoint(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-//			testObj2.transform.position = tile [tile_no[0],tile_no[1]].transform.position;
-		}
+//		if (Input.GetMouseButton(0))
+//		{
+//
+//			ray = Camera.main.ScreenPointToRay (Input.mousePosition);
+//
+//			if (Physics.Raycast (ray, out hit, 2000))
+//			{
+//				testObj2.transform.position = hit.point;
+//			}
+//		}
 	}
 
 	public int[] GetNearestPoint(Vector3 point1)
