@@ -6,9 +6,9 @@ public class CamScript : MonoBehaviour
 {
 	//float 	camMinZoom 	= Screen.height/8, camMaxZoom = (27*Screen.height)/50,//--->(x/2)+(x/25)
 	//private bool 	androidOS = false, winOS = false, reset = false;
-	private float 	senseTime = 0.05f, speed = 0;
+	private float 	senseTime = 0.05f, speed = 0, prevMagnifyDist;
 	private Vector3 mousePt1, mousePt2;
-	private bool reset = false;
+	private bool reset = false, magnification = false;
 
 	public GameObject virtualCam;
 
@@ -18,35 +18,50 @@ public class CamScript : MonoBehaviour
 //	minY = -0.35f*Screen.width, 		maxY = 0.35f*Screen.width,
 //	minX = -Screen.width/2, 			maxX = Screen.width/2;
 	
-	private Vector3 clicked_mPos, curr_mPos, camPos;
+	private Vector3 clicked_mPos, curr_mPos, camPos, defaultCamPos;
 
 
 	public static CamScript instance;
 
+	private Touch touch1, touch2;
+
 
 	void Start () 
-	{
+	{//Debug.Log("SW: "+Screen.width+" SH: "+Screen.height);
 		instance = gameObject.GetComponent<CamScript>();
 
 		virtualCam = Instantiate(virtualCam, new Vector3(0, 0.5f*Screen.width, -0.5f*Screen.width), Quaternion.identity) as GameObject;
 
-		GetComponent<Camera>().orthographicSize = 0.49f*Screen.height;
+		GetComponent<Camera>().orthographicSize = 0.3f*Screen.height;
 		GetComponent<Camera>().farClipPlane = Screen.width*2.5f;
 		transform.position = virtualCam.transform.position;
-		camPos = transform.position;
+		defaultCamPos = transform.position;
 
-		camMinZoom = GameManager.mapHeight/8;
+
+		camMinZoom = Screen.height/6;
 		camMaxZoom = Screen.height/2;
+//		camMinZoom = GameManager.mapHeight/6f;
+//		camMaxZoom = (GameManager.mapHeight/Mathf.Sqrt(2f))/2f;
 
-		minY = -0.75f*GameManager.mapHeight/2;
-		maxY = 0.75f*GameManager.mapHeight/2;
-		minX = -GameManager.mapWidth/2;
-		maxX =  GameManager.mapWidth/2;
+		//minY = -(GameManager.mapHeight/Mathf.Sqrt(2f))/2f;
+		//maxY = (GameManager.mapHeight/Mathf.Sqrt(2f))/2f;
+		//maxY = 0.75f*GameManager.mapHeight/2;
+		minX = -GameManager.terrainHeight/2;
+		maxX =  GameManager.terrainHeight/2;
 
-		minX = camPos.x + minX;
-		maxX = camPos.x + maxX;
-		minY = camPos.y + minY;
-		maxY = camPos.y + maxY;
+
+		minX = defaultCamPos.x + minX;
+		maxX = defaultCamPos.x + maxX;
+		minY = defaultCamPos.y - (GameManager.terrainHeight/2 - (0.5f * Mathf.Sqrt(2.0f) * GetComponent<Camera>().orthographicSize));
+		maxY = defaultCamPos.y + (GameManager.terrainHeight/2 - (0.5f * Mathf.Sqrt(2.0f) * GetComponent<Camera>().orthographicSize));
+
+//		minX = camPos.x + minX;
+//		maxX = camPos.x + maxX;
+//		minY = camPos.y + minY;
+//		maxY = camPos.y + maxY;
+
+
+		camPos = transform.position;
 	}	
 
 
@@ -62,13 +77,69 @@ public class CamScript : MonoBehaviour
 		
 		//if(GameManager.gameStatus == GameStatus.VillageMode)
 		{
+
+
+
+
+
+
+			if(Input.touchCount == 2)
+			{
+				touch1 = Input.GetTouch(0);
+				touch2 = Input.GetTouch(1);
+				float magnifyDist = Vector3.Distance(touch1.position, touch2.position);
+				
+				if(!magnification)
+				{
+					magnification = true;
+					prevMagnifyDist = Vector3.Distance(touch1.position, touch2.position);
+				}
+				
+				if(senseTime <= 0)
+				{
+					senseTime = 0.05f;
+					
+					if(magnifyDist > prevMagnifyDist)
+					{
+						if(GetComponent<Camera>().orthographicSize+prevMagnifyDist-magnifyDist >= camMinZoom)
+							GetComponent<Camera>().orthographicSize += prevMagnifyDist-magnifyDist;
+						else
+							GetComponent<Camera>().orthographicSize = camMinZoom;
+						prevMagnifyDist = magnifyDist;
+						
+						AdjustCamPosition();
+					}
+					else
+					{
+						if(GetComponent<Camera>().orthographicSize+prevMagnifyDist-magnifyDist <= camMaxZoom)
+							GetComponent<Camera>().orthographicSize += prevMagnifyDist-magnifyDist;
+						else
+							GetComponent<Camera>().orthographicSize = camMaxZoom-1;
+						prevMagnifyDist = magnifyDist;
+						
+						AdjustCamPosition();
+					}
+				}
+			}
+			else
+				magnification = false;
+
+
+
+
+
+
+
 			if( Input.GetAxis("Mouse ScrollWheel") > 0)
 			{
 				if(GetComponent<Camera>().orthographicSize-5 >= camMinZoom)
 					GetComponent<Camera>().orthographicSize -= 5;
 				else
 					GetComponent<Camera>().orthographicSize = camMinZoom;
-				
+
+				minY = defaultCamPos.y - (GameManager.terrainHeight/2 - (0.5f * Mathf.Sqrt(2.0f) * GetComponent<Camera>().orthographicSize));
+				maxY = defaultCamPos.y + (GameManager.terrainHeight/2 - (0.5f * Mathf.Sqrt(2.0f) * GetComponent<Camera>().orthographicSize));
+
 				AdjustCamPosition();
 			}
 			if( Input.GetAxis("Mouse ScrollWheel") < 0)
@@ -77,6 +148,9 @@ public class CamScript : MonoBehaviour
 					GetComponent<Camera>().orthographicSize += 5;
 				else
 					GetComponent<Camera>().orthographicSize = camMaxZoom;
+
+				minY = defaultCamPos.y - (GameManager.terrainHeight/2 - (0.5f * Mathf.Sqrt(2.0f) * GetComponent<Camera>().orthographicSize));
+				maxY = defaultCamPos.y + (GameManager.terrainHeight/2 - (0.5f * Mathf.Sqrt(2.0f) * GetComponent<Camera>().orthographicSize));
 				
 				AdjustCamPosition();
 			}
@@ -95,7 +169,7 @@ public class CamScript : MonoBehaviour
 				reset = false;
 			}
 			
-			if(Input.GetMouseButton(0))// && GameManager.buttonClicked == false && GameManager.panning)
+			if(Input.GetMouseButton(0) && Input.touchCount < 2)// && GameManager.buttonClicked == false && GameManager.panning)
 			{
 				camPos = transform.position;
 				curr_mPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -147,11 +221,14 @@ public class CamScript : MonoBehaviour
 			}
 		}
 	}
-	
+
+
 	void AdjustCamPosition()
 	{
 		float orthoY = GetComponent<Camera>().orthographicSize, orthoX = (orthoY * Screen.width)/Screen.height;
-
+		
+		orthoY = orthoY / Mathf.Sqrt(2.0f);
+		
 		if(camPos.x + orthoX > maxX)
 		{
 			camPos.x = maxX - orthoX;
@@ -164,15 +241,46 @@ public class CamScript : MonoBehaviour
 		}
 		if(camPos.y + orthoY > maxY)
 		{
-			camPos.y = maxY - orthoY;
+			camPos.y = maxY - orthoY-0.1f;
 			reset = true;
 		}
 		else if(camPos.y - orthoY < minY)
 		{
-			camPos.y = minY + orthoY;
+			camPos.y = minY + orthoY+0.1f;
 			reset = true;
 		}
-
+		
 		transform.position = camPos;
 	}
+
+
+//	void AdjustCamPosition()
+//	{
+//		float orthoY = GetComponent<Camera>().orthographicSize, orthoX = (orthoY * Screen.width)/Screen.height;
+//
+//		orthoY = orthoY / Mathf.Sqrt(2.0f);
+//
+//		if(camPos.x + orthoX > maxX)
+//		{
+//			camPos.x = maxX - orthoX;
+//			reset = true;
+//		}
+//		else if(camPos.x - orthoX < minX)
+//		{
+//			camPos.x = minX + orthoX;
+//			reset = true;
+//		}
+//		if(camPos.y + orthoY > maxY)
+//		{
+//			camPos.y = maxY - orthoY;
+//			reset = true;
+//		}
+//		else if(camPos.y - orthoY < minY)
+//		{
+//			camPos.y = minY + orthoY;
+//			reset = true;
+//		}
+//
+//		transform.position = camPos;
+//	}
 }
